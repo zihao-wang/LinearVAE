@@ -20,8 +20,6 @@ parser.add_argument('--latent_dim', default=5)
 parser.add_argument('--eta_dec_sq', default=1)
 parser.add_argument('--eta_prior_sq', default=1)
 
-
-
 parser.add_argument('--batch_size', default=16)
 parser.add_argument('--epoch', default=100)
 parser.add_argument('--lr', default=1e-2)
@@ -95,9 +93,9 @@ if __name__ == "__main__":
 
     pprint(list(zip(beta_list, final_traj)))
 
-    plt.plot(beta_list, total_loss, label='total')
-    plt.plot(beta_list, rec_loss, label='rec')
-    plt.plot(beta_list, kl_loss, label='kl')
+    plt.scatter(beta_list, total_loss, label='total')
+    plt.scatter(beta_list, rec_loss, label='rec')
+    plt.scatter(beta_list, kl_loss, label='kl')
     plt.legend()
     plt.title('loss with respect to beta')
     plt.xlabel('beta')
