@@ -13,7 +13,7 @@ def get_general_vae_dataset(num_samples: int,
     x = torch.randn(size=(num_samples, input_dim))
     rank = min(input_dim, target_dim, len(singular_values))
 
-    transfer_matrix = torch.zeros(target_dim, input_dim)
+    transfer_matrix = torch.zeros(input_dim, target_dim)
     transfer_matrix[:rank, :rank] = torch.diag(
         torch.tensor(singular_values[:rank]))
 

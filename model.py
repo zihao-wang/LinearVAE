@@ -49,7 +49,7 @@ class LinearBetaVAE(nn.Module):
     def forward(self, x, y):
         encoded = self.encoder(x)
         y_pred = self.decoder(encoded['z'])
-        rec_loss = torch.norm(y - y_pred, p=2, dim=-1).mean(0) / self.eta_dec_sq / 2
+        rec_loss = torch.square(y - y_pred).sum(-1).mean(0) / self.eta_dec_sq / 2
 
         kl_loss = .5 * (
             - torch.log(encoded['sigma']**2 / self.eta_prior_sq).sum(-1) 
