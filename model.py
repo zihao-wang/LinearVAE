@@ -9,8 +9,8 @@ class LinearVariationalEncoder(nn.Module):
         super(LinearVariationalEncoder, self).__init__()
         self.input_dim = input_dim
         self.latent_dim = latent_dim
-        self.nn_mean = nn.Linear(input_dim, latent_dim)
-        self.nn_logvar =  nn.Linear(input_dim, latent_dim)
+        self.nn_mean = nn.Linear(input_dim, latent_dim, bias=False)
+        self.nn_logvar =  nn.Linear(input_dim, latent_dim, bias=True)
     
     def forward(self, x):
         batch_size = x.size(0)
@@ -27,7 +27,7 @@ class LinearVariationalDecoder(nn.Module):
         super(LinearVariationalDecoder, self).__init__()
         self.latent_dim = latent_dim
         self.target_dim = target_dim
-        self.l = nn.Linear(latent_dim, target_dim)
+        self.l = nn.Linear(latent_dim, target_dim, bias=False)
 
     def forward(self, z):
         y = self.l(z)
@@ -65,7 +65,9 @@ class LinearBetaVAE(nn.Module):
             'y_pred': y_pred,
             'loss': loss,
             'rec_loss': rec_loss,
-            'kl_loss': kl_loss * self.beta
+            'kl_loss': kl_loss * self.beta,
+            'norm_enc': self.encoder.nn_mean.weight.norm(),
+            'norm_dec': self.decoder.l.weight.norm()
         }
 
         return forward_dict
