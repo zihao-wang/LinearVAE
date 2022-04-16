@@ -1,19 +1,19 @@
 import argparse
 import logging
 from pprint import pprint
-import numpy as np
 
+import numpy as np
+import pandas as pd
 import torch
 import tqdm
-from torch.utils.data import DataLoader
 from torch import nn
-import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
 
-from synthetic_dataset import get_general_vae_dataset
 from model import LinearBetaVAE, ReLUBetaVAE, TanhBetaVAE
+from synthetic_dataset import get_general_vae_dataset
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--num_samples', default=512)
+parser.add_argument('--num_samples', default=4096)
 
 parser.add_argument('--model', default='linear')
 parser.add_argument('--input_dim', default=5)
@@ -23,11 +23,10 @@ parser.add_argument('--hidden_dim', default=8)
 parser.add_argument('--eta_dec_sq', default=1)
 parser.add_argument('--eta_prior_sq', default=1)
 
-parser.add_argument('--batch_size', default=512)
-parser.add_argument('--epoch', default=256 * 32)
+parser.add_argument('--batch_size', default=16)
+parser.add_argument('--epoch', default=256)
 parser.add_argument('--lr', default=1e-3)
 
-logging.basicConfig(filename='linear_beta_vae.log', filemode='wt', level=logging.INFO)
 
 def train(dataset, model: nn.Module, args):
     loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
@@ -39,10 +38,9 @@ def train(dataset, model: nn.Module, args):
             total_loss = 0
             total_rec_loss = 0
             total_kl_loss = 0
-            total_sigma = 0
             total_enc_norm = 0
             total_dec_norm = 0
-            sigma_list = []
+            sigma_array_list = []
 
             for i, (x, y) in enumerate(loader):
                 optimizer.zero_grad()
@@ -51,8 +49,7 @@ def train(dataset, model: nn.Module, args):
                 total_loss += loss.item()
                 total_rec_loss += fetched['rec_loss'].item()
                 total_kl_loss += fetched['kl_loss'].item()
-                total_sigma += fetched['sigma'].mean().item()
-                sigma_list.extend(fetched['sigma'].detach().cpu().numpy().tolist())
+                sigma_array_list.append(fetched['sigma'].detach().cpu().numpy())
                 if args.model == 'linear':
                     total_enc_norm += fetched['enc_norm'].item()
                     total_dec_norm += fetched['dec_norm'].item()
@@ -64,23 +61,27 @@ def train(dataset, model: nn.Module, args):
                     'total': total_loss/L, 
                     'rec': total_rec_loss/L, 
                     'kl': total_kl_loss/L,
-                    'sigma': total_sigma/L,
-                    'sigma_variance': np.var(sigma_list),
                     'enc_norm': total_enc_norm/L,
                     'dec_norm': total_dec_norm/L}
             t.set_postfix(traj)
             logging.info(traj)
+            traj['sigma_array'] = np.concatenate(sigma_array_list, axis=0)
             trajectory.append(traj)
             
     return trajectory
 
 if __name__ == "__main__":
     args = parser.parse_args()
+
+    logging.basicConfig(filename=f'{args.model}_beta_vae.log', filemode='wt', level=logging.INFO)
+
+
+    xi_list = [1, 2, 3, 4, 5]
     dataset = get_general_vae_dataset(
         num_samples=args.num_samples,
         input_dim=args.input_dim,
         # target_dim=args.target_dim,
-        singular_values=[1, 2, 3, 4, 5]
+        singular_values=xi_list
     )
     # test_dataset = get_general_vae_dataset(
     #     num_samples=args.num_samples,
@@ -96,7 +97,8 @@ if __name__ == "__main__":
     total_loss = []
     rec_loss = []
     kl_loss = []
-    sigma = []
+    sigma_mean_list = []
+    sigma_std_list = []
     final_traj = []
     enc_norm = []
     dec_norm = []
@@ -122,25 +124,33 @@ if __name__ == "__main__":
         total_loss.append(traj[-1]['total'])
         rec_loss.append(traj[-1]['rec'])
         kl_loss.append(traj[-1]['kl'])
-        sigma.append(traj[-1]['sigma'])
+
+        last_sigma = traj[-1]['sigma_array']
+
+        sigma_mean_list.append(np.mean(last_sigma, axis=0).tolist())
+        sigma_std_list.append(np.std(last_sigma, axis=0).tolist())
+
+        assert len(sigma_mean_list[0]) == len(xi_list)
+
         if args.model == 'linear':
             enc_norm.append(traj[-1]['enc_norm'])
             dec_norm.append(traj[-1]['dec_norm'])
 
         final_traj.append(traj[-1])
 
-    pprint(list(zip(beta_list, final_traj)))
 
-    plt.scatter(beta_list, total_loss, marker='s', label='total')
-    plt.scatter(beta_list, rec_loss, marker='d', label='rec')
-    plt.scatter(beta_list, kl_loss, marker='D', label=r'$\beta$ KL')
-    plt.scatter(beta_list, sigma, marker='o', label=r'$\sigma_{\rm enc}$')
+    data = {'beta': beta_list,
+            'total_loss': total_loss,
+            'rec_loss': rec_loss,
+            'kl_loss': kl_loss}
+
     if args.model == 'linear':
-        plt.scatter(beta_list, enc_norm, marker='*', label=r'$\|W_{\rm enc}\|$')
-        plt.scatter(beta_list, dec_norm, marker='*', label=r'$\|W_{\rm dec}\|$')
-    # plt.plot(beta_list, np.sqrt(np.asarray(beta_list)), label=r'\|\sigma_{\rm enc}\| sol')
-    plt.legend()
-    plt.title('loss with respect to beta')
-    plt.xlabel(r'$\beta$')
-    plt.ylabel('loss')
-    plt.savefig(f'{args.model}_vae_beta_loss.png')
+        data['enc_norm'] = enc_norm
+        data['dec_norm'] = dec_norm
+
+    for i in range(len(xi_list)):
+        data[f'sigma-{i}_mean'] = [sigma_mean[i] for sigma_mean in sigma_mean_list] 
+        data[f'sigma-{i}_std']  = [sigma_std[i]  for sigma_std in sigma_std_list]
+
+    pd.DataFrame(data).to_csv(f'output/{args.model}_losses.csv', index=False)
+
