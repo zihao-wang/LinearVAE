@@ -1,6 +1,5 @@
 import argparse
 import logging
-from pprint import pprint
 
 import numpy as np
 import pandas as pd
@@ -8,19 +7,21 @@ import torch
 import tqdm
 from torch import nn
 from torch.utils.data import DataLoader
+from torchvision.datasets import MNIST
+from torchvision import transforms
+
 
 from model import LinearBetaVAE, ReLUBetaVAE, TanhBetaVAE
-from synthetic_dataset import get_synthetic_vae_dataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--num_samples', default=4096)
 
 parser.add_argument('--model', default='linear')
 parser.add_argument('--name', type=str, default="")
-parser.add_argument('--input_dim', default=5, type=int)
-parser.add_argument('--target_dim', default=5, type=int)
-parser.add_argument('--latent_dim', default=5, type=int)
-parser.add_argument('--hidden_dim', default=8, type=int)
+parser.add_argument('--input_dim', default=784, type=int)
+parser.add_argument('--target_dim', default=784, type=int)
+parser.add_argument('--latent_dim', default=8, type=int)
+parser.add_argument('--hidden_dim', default=1024, type=int)
 parser.add_argument('--eta_dec_sq', default=1, type=float)
 parser.add_argument('--eta_prior_sq', default=1, type=float)
 
@@ -43,9 +44,10 @@ def train(dataset, model: nn.Module, args):
             total_dec_norm = 0
             sigma_array_list = []
 
-            for i, (x, y) in enumerate(loader):
+            for x, _ in tqdm.tqdm(loader):
+                x = x.reshape(-1, 784)
                 optimizer.zero_grad()
-                fetched = model(x, y)
+                fetched = model(x, x)
                 loss = fetched['loss']
                 total_loss += loss.item()
                 total_rec_loss += fetched['rec_loss'].item()
@@ -74,26 +76,14 @@ def train(dataset, model: nn.Module, args):
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    logging.basicConfig(filename=f'{args.model}_beta_vae_mnist.log', filemode='wt', level=logging.INFO)
+    logging.basicConfig(filename=f'{args.model}_beta_vae.log', filemode='wt', level=logging.INFO)
 
 
-    xi_list = [1, 2, 3, 4, 5]
-    dataset = get_synthetic_vae_dataset(
-        num_samples=args.num_samples,
-        input_dim=args.input_dim,
-        # target_dim=args.target_dim,
-        singular_values=xi_list
-    )
-    # test_dataset = get_general_vae_dataset(
-    #     num_samples=args.num_samples,
-    #     input_dim=args.input_dim,
-    #     target_dim=args.target_dim,
-    #     singular_values=[1,1,1,1,1]
-    # )
-
+    transform = transforms.Compose(
+        [transforms.ToTensor()])
+    dataset = MNIST('./dataset', transform=transform, download=True)
 
     beta_list = list(i for i in range(31))
-    # beta_list = [150, 10, 0.001]
 
     total_loss = []
     rec_loss = []

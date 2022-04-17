@@ -10,7 +10,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 from model import LinearBetaVAE, ReLUBetaVAE, TanhBetaVAE
-from synthetic_dataset import get_synthetic_vae_dataset
+from synthetic_dataset import get_general_vae_dataset, get_synthetic_vae_dataset
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--num_samples', default=4096)
@@ -18,7 +18,7 @@ parser.add_argument('--num_samples', default=4096)
 parser.add_argument('--model', default='linear')
 parser.add_argument('--name', type=str, default="")
 parser.add_argument('--input_dim', default=5, type=int)
-parser.add_argument('--target_dim', default=5, type=int)
+parser.add_argument('--target_dim', default=10, type=int)
 parser.add_argument('--latent_dim', default=5, type=int)
 parser.add_argument('--hidden_dim', default=8, type=int)
 parser.add_argument('--eta_dec_sq', default=1, type=float)
@@ -74,14 +74,14 @@ def train(dataset, model: nn.Module, args):
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    logging.basicConfig(filename=f'{args.model}_beta_vae_mnist.log', filemode='wt', level=logging.INFO)
+    logging.basicConfig(filename=f'{args.model}_beta_vae_regression.log', filemode='wt', level=logging.INFO)
 
 
     xi_list = [1, 2, 3, 4, 5]
-    dataset = get_synthetic_vae_dataset(
+    dataset = get_general_vae_dataset(
         num_samples=args.num_samples,
         input_dim=args.input_dim,
-        # target_dim=args.target_dim,
+        target_dim=args.target_dim,
         singular_values=xi_list
     )
     # test_dataset = get_general_vae_dataset(
@@ -153,5 +153,5 @@ if __name__ == "__main__":
         data[f'sigma-{i}_mean'] = [sigma_mean[i] for sigma_mean in sigma_mean_list] 
         data[f'sigma-{i}_std']  = [sigma_std[i]  for sigma_std in sigma_std_list]
 
-    pd.DataFrame(data).to_csv(f'output/{args.name}{args.model}_losses.csv', index=False)
+    pd.DataFrame(data).to_csv(f'output/regression_{args.name}{args.model}_losses.csv', index=False)
 
