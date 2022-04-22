@@ -18,14 +18,14 @@ parser.add_argument('--num_samples', default=4096)
 parser.add_argument('--model', default='linear')
 parser.add_argument('--name', type=str, default="")
 parser.add_argument('--input_dim', default=5, type=int)
-parser.add_argument('--target_dim', default=10, type=int)
+parser.add_argument('--target_dim', default=5, type=int)
 parser.add_argument('--latent_dim', default=5, type=int)
 parser.add_argument('--hidden_dim', default=8, type=int)
 parser.add_argument('--eta_dec_sq', default=1, type=float)
 parser.add_argument('--eta_prior_sq', default=1, type=float)
 
 parser.add_argument('--batch_size', default=16)
-parser.add_argument('--epoch', default=256)
+parser.add_argument('--epoch', default=300)
 parser.add_argument('--lr', default=1e-3)
 
 
@@ -59,8 +59,8 @@ def train(dataset, model: nn.Module, args):
 
             L = len(loader)
             traj = {'epoch': e,
-                    'total': total_loss/L, 
-                    'rec': total_rec_loss/L, 
+                    'total': total_loss/L,
+                    'rec': total_rec_loss/L,
                     'kl': total_kl_loss/L,
                     'enc_norm': total_enc_norm/L,
                     'dec_norm': total_dec_norm/L}
@@ -68,7 +68,7 @@ def train(dataset, model: nn.Module, args):
             logging.info(traj)
             traj['sigma_array'] = np.concatenate(sigma_array_list, axis=0)
             trajectory.append(traj)
-            
+
     return trajectory
 
 if __name__ == "__main__":
@@ -77,22 +77,14 @@ if __name__ == "__main__":
     logging.basicConfig(filename=f'{args.model}_beta_vae_regression.log', filemode='wt', level=logging.INFO)
 
 
-    xi_list = [1, 2, 3, 4, 5]
+    xi_list = [1.2, 1.4, 1.6, 1.8, 2]
     dataset = get_general_vae_dataset(
         num_samples=args.num_samples,
         input_dim=args.input_dim,
         target_dim=args.target_dim,
         singular_values=xi_list
     )
-    # test_dataset = get_general_vae_dataset(
-    #     num_samples=args.num_samples,
-    #     input_dim=args.input_dim,
-    #     target_dim=args.target_dim,
-    #     singular_values=[1,1,1,1,1]
-    # )
-
-
-    beta_list = list(i for i in range(31))
+    beta_list = list(i for i in range(21))
     # beta_list = [150, 10, 0.001]
 
     total_loss = []
@@ -150,8 +142,7 @@ if __name__ == "__main__":
         data['dec_norm'] = dec_norm
 
     for i in range(args.latent_dim):
-        data[f'sigma-{i}_mean'] = [sigma_mean[i] for sigma_mean in sigma_mean_list] 
+        data[f'sigma-{i}_mean'] = [sigma_mean[i] for sigma_mean in sigma_mean_list]
         data[f'sigma-{i}_std']  = [sigma_std[i]  for sigma_std in sigma_std_list]
 
     pd.DataFrame(data).to_csv(f'output/regression_{args.name}{args.model}_losses.csv', index=False)
-

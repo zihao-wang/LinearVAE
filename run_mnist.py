@@ -61,8 +61,8 @@ def train(dataset, model: nn.Module, args):
 
             L = len(loader)
             traj = {'epoch': e,
-                    'total': total_loss/L, 
-                    'rec': total_rec_loss/L, 
+                    'total': total_loss/L,
+                    'rec': total_rec_loss/L,
                     'kl': total_kl_loss/L,
                     'enc_norm': total_enc_norm/L,
                     'dec_norm': total_dec_norm/L}
@@ -70,7 +70,7 @@ def train(dataset, model: nn.Module, args):
             logging.info(traj)
             traj['sigma_array'] = np.concatenate(sigma_array_list, axis=0)
             trajectory.append(traj)
-            
+
     return trajectory
 
 if __name__ == "__main__":
@@ -140,8 +140,7 @@ if __name__ == "__main__":
         data['dec_norm'] = dec_norm
 
     for i in range(args.latent_dim):
-        data[f'sigma-{i}_mean'] = [sigma_mean[i] for sigma_mean in sigma_mean_list] 
+        data[f'sigma-{i}_mean'] = [sigma_mean[i] for sigma_mean in sigma_mean_list]
         data[f'sigma-{i}_std']  = [sigma_std[i]  for sigma_std in sigma_std_list]
 
     pd.DataFrame(data).to_csv(f'output/{args.name}{args.model}_losses.csv', index=False)
-
