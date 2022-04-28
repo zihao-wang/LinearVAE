@@ -18,14 +18,15 @@ colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple"]
 figsize = (3.5, 2.5)
 
 
-# xi_list = [1, 2, 3, 4, 5]
+xi_list = [5,4,3,2,1]
 # xi_list = [3.2911, 2.9455, 2.4364, 2.2479, 1.7337] # linear
-# xi2_list = [xi ** 2 for xi in xi_list]
+xi_list = [3.7802, 2.8939, 2.5942, 2.1586, 1.6852] # tanh
+xi2_list = [xi ** 2 for xi in xi_list]
 
 # print(xi_list)
 
 # xi2_list = [11.8407, 10.2102,  5.8561,  4.9906,  2.4817] # regression relu
-xi2_list = [5.11678773, 3.74132848, 3.25265424, 2.84157334, 2.56707496, 35.20561675215616] # mnist top 5
+# xi2_list = [5.11678773, 3.74132848, 3.25265424, 2.84157334, 2.56707496, 35.20561675215616] # mnist top 5
 
 
 
@@ -76,7 +77,7 @@ def plot_loss(args):
     # plt.plot(data['beta'], theory_rec_loss, label='rec')
     # plt.plot(data['beta'], theory_kl_loss, label=r'$\beta$ KL')
     if args.guidelines:
-        plt.vlines(x=xi2_list[:5], ymin=0, ymax=28,
+        plt.vlines(x=xi2_list[:5], ymin=0, ymax=20,
                    color='gray', alpha=.5, ls='--')
 
     plt.legend()
@@ -109,7 +110,7 @@ def plot_variance(args):
     plt.figure(figsize=figsize)
     markers = ["s", "^", "v", "<", ">"]
     for _i in range(m):
-        i = 4-_i
+        i = m-1-_i
         if args.theory_sigma:
             plt.plot(theory_beta_array,
                      np.minimum(1, np.sqrt(theory_beta_array / xi2_list[i])),
