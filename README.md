@@ -4,11 +4,12 @@ Implementation of paper [Posterior Collapse of a Linear Latent Variable Model](h
 
 ## requirement
 
-python 3.7+
-pytorch 1.7+
+- python 3.7+
+- pytorch 1.7+
 
 ## Citation
 
+```
 @inproceedings{wang2022posterior,
   abbr={NeurIPS},
   title={Posterior Collapse of a Linear Latent Variable Model},
@@ -17,3 +18,4 @@ pytorch 1.7+
   year={2022},
   selected={true},
 }
+```
